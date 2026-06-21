@@ -1,5 +1,6 @@
 import Stat from '@/components/Stat';
 import useActivities from '@/hooks/useActivities';
+import { ACTIVITY_TOTAL } from '@/utils/const';
 
 const PeriodStat = ({ onClick }: { onClick: (_period: string) => void }) => {
   const { runPeriod } = useActivities();
@@ -13,7 +14,7 @@ const PeriodStat = ({ onClick }: { onClick: (_period: string) => void }) => {
           <Stat
             key={period}
             value={period}
-            description={` ${times} Runs`}
+            description={` ${times}${ACTIVITY_TOTAL.ACTIVITY_COUNT_UNIT_TITLE}`}
             citySize={3}
             onClick={() => onClick(period)}
           />

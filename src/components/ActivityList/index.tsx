@@ -11,12 +11,13 @@ import React, {
 import VirtualList from 'rc-virtual-list';
 import { useNavigate } from 'react-router-dom';
 import styles from './style.module.css';
-import { ACTIVITY_TOTAL, LOADING_TEXT } from '@/utils/const';
+import { ACTIVITY_TOTAL, ACTIVITY_TYPES, LOADING_TEXT } from '@/utils/const';
 import { totalStat, yearSummaryStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
 import { SHOW_ELEVATION_GAIN, HOME_PAGE_TITLE } from '@/utils/const';
 import { DIST_UNIT, M_TO_DIST } from '@/utils/utils';
 import type { Activity } from '@/utils/utils';
+import { getActivityType } from '@/utils/utils';
 import useActivities from '@/hooks/useActivities';
 // Layout constants (avoid magic numbers)
 const ITEM_WIDTH = 280;
@@ -135,6 +136,16 @@ interface ActivityGroups {
 }
 
 type IntervalType = 'year' | 'month' | 'week' | 'day' | 'life';
+type SportTypeOption =
+  | 'all'
+  | 'running'
+  | 'walking'
+  | 'hiking'
+  | 'cycling'
+  | 'swimming'
+  | 'mountaineering'
+  | 'skiing'
+  | 'other';
 
 // A row group contains multiple activity card data items that will be rendered in one virtualized row
 type RowGroup = Array<{ period: string; summary: ActivitySummary }>;
@@ -143,7 +154,7 @@ interface ActivityListCache {
   activityGroups: Map<string, ActivityGroups>;
   availableYears?: string[];
   periodSummaries: Map<string, RowGroup>;
-  sportTypeOptions?: string[];
+  sportTypeOptions?: SportTypeOption[];
 }
 
 const activityListCache = new WeakMap<Activity[], ActivityListCache>();
@@ -164,21 +175,39 @@ const getSportTypeOptions = (activityData: Activity[]) => {
   const cache = getActivityListCache(activityData);
   if (cache.sportTypeOptions) return cache.sportTypeOptions;
 
-  const sportTypeSet = new Set(activityData.map((activity) => activity.type));
-  if (sportTypeSet.has('Run')) {
-    sportTypeSet.delete('Run');
-    sportTypeSet.add('running');
-  }
-  if (sportTypeSet.has('Walk')) {
-    sportTypeSet.delete('Walk');
-    sportTypeSet.add('walking');
-  }
-  if (sportTypeSet.has('Ride')) {
-    sportTypeSet.delete('Ride');
-    sportTypeSet.add('cycling');
-  }
-  cache.sportTypeOptions = ['all', ...sportTypeSet];
+  const sportTypeSet = new Set(
+    activityData.map((activity) => getActivityType(activity))
+  );
+  const sportTypeOrder: SportTypeOption[] = [
+    'running',
+    'walking',
+    'hiking',
+    'mountaineering',
+    'cycling',
+    'swimming',
+    'skiing',
+    'other',
+  ];
+  cache.sportTypeOptions = [
+    'all',
+    ...sportTypeOrder.filter((type) => sportTypeSet.has(type)),
+  ];
   return cache.sportTypeOptions;
+};
+
+const getSportTypeLabel = (sportType: SportTypeOption): string => {
+  const labels: Record<SportTypeOption, string> = {
+    all: ACTIVITY_TYPES.ALL_TITLE,
+    running: ACTIVITY_TYPES.RUN_GENERIC_TITLE,
+    walking: ACTIVITY_TYPES.WALKING_TITLE,
+    hiking: ACTIVITY_TYPES.HIKING_TITLE,
+    cycling: ACTIVITY_TYPES.CYCLING_TITLE,
+    swimming: ACTIVITY_TYPES.SWIMMING_TITLE,
+    mountaineering: ACTIVITY_TYPES.MOUNTAINEERING_TITLE,
+    skiing: ACTIVITY_TYPES.SKIING_TITLE,
+    other: 'Other',
+  };
+  return labels[sportType];
 };
 
 const getAvailableActivityYears = (activityData: Activity[]) => {
@@ -235,16 +264,7 @@ const generateLabels = (interval: string, period: string): number[] => {
 
 const matchesSportType = (activity: Activity, sportTypeArg: string) => {
   if (sportTypeArg === 'all') return true;
-  if (sportTypeArg === 'running') {
-    return activity.type === 'running' || activity.type === 'Run';
-  }
-  if (sportTypeArg === 'walking') {
-    return activity.type === 'walking' || activity.type === 'Walk';
-  }
-  if (sportTypeArg === 'cycling') {
-    return activity.type === 'cycling' || activity.type === 'Ride';
-  }
-  return activity.type === sportTypeArg;
+  return getActivityType(activity) === sportTypeArg;
 };
 
 const createEmptyActivitySummary = (): ActivitySummary => ({
@@ -763,7 +783,7 @@ const ActivityCard = React.memo(ActivityCardInner, activityCardAreEqual);
 const ActivityList: React.FC = () => {
   const { activities: activityData } = useActivities();
   const [interval, setInterval] = useState<IntervalType>('month');
-  const [sportType, setSportType] = useState<string>('all');
+  const [sportType, setSportType] = useState<SportTypeOption>('all');
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
   const availableYears = useMemo(
@@ -910,7 +930,7 @@ const ActivityList: React.FC = () => {
           {HOME_PAGE_TITLE}
         </button>
         <select
-          onChange={(e) => setSportType(e.target.value)}
+          onChange={(e) => setSportType(e.target.value as SportTypeOption)}
           value={sportType}
         >
           {sportTypeOptions.map((type) => (
@@ -919,7 +939,7 @@ const ActivityList: React.FC = () => {
               value={type}
               disabled={interval === 'life' && type !== 'all'}
             >
-              {type}
+              {getSportTypeLabel(type)}
             </option>
           ))}
         </select>
@@ -963,6 +983,7 @@ const ActivityList: React.FC = () => {
                 )}
                 {sportType === 'walking' && <WalkingSvg />}
                 {sportType === 'hiking' && <HikingSvg />}
+                {sportType === 'mountaineering' && <HikingSvg />}
                 {sportType === 'cycling' && <CyclingSvg />}
                 {sportType === 'swimming' && <SwimmingSvg />}
                 {sportType === 'skiing' && <SkiingSvg />}

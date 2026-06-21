@@ -34,6 +34,70 @@ export interface Activity {
   streak: number;
 }
 
+export type ActivityType =
+  | 'running'
+  | 'walking'
+  | 'hiking'
+  | 'cycling'
+  | 'swimming'
+  | 'mountaineering'
+  | 'skiing'
+  | 'other';
+
+const normalizeTypeName = (type: string): string =>
+  type.replace(/[\s_-]/g, '').toLowerCase();
+
+const getActivityType = (activity: Activity): ActivityType => {
+  const type = normalizeTypeName(activity.type || '');
+  const subtype = normalizeTypeName(activity.subtype || '');
+  const name = normalizeTypeName(activity.name || '');
+  const typeText = `${type} ${subtype} ${name}`;
+
+  if (typeText.includes('swim') || typeText.includes('游泳')) {
+    return 'swimming';
+  }
+  if (
+    typeText.includes('mountaineering') ||
+    typeText.includes('climb') ||
+    typeText.includes('登山') ||
+    typeText.includes('攀岩')
+  ) {
+    return 'mountaineering';
+  }
+  if (
+    typeText.includes('hike') ||
+    typeText.includes('hiking') ||
+    typeText.includes('徒步')
+  ) {
+    return 'hiking';
+  }
+  if (
+    typeText.includes('ride') ||
+    typeText.includes('cycling') ||
+    typeText.includes('cycle') ||
+    typeText.includes('骑行')
+  ) {
+    return 'cycling';
+  }
+  if (
+    typeText.includes('walk') ||
+    typeText.includes('walking') ||
+    typeText.includes('步行')
+  ) {
+    return 'walking';
+  }
+  if (typeText.includes('ski')) {
+    return 'skiing';
+  }
+  if (typeText.includes('run') || typeText.includes('跑步')) {
+    return 'running';
+  }
+  return 'other';
+};
+
+const isRunningActivity = (activity: Activity): boolean =>
+  getActivityType(activity) === 'running';
+
 const titleForShow = (run: Activity): string => {
   const date = run.start_date_local.slice(0, 11);
   const distance = (run.distance / M_TO_DIST).toFixed(2);
@@ -45,12 +109,12 @@ const titleForShow = (run: Activity): string => {
     name = run.name;
   }
   return `${name} ${date} ${distance} ${DIST_UNIT} ${
-    !run.summary_polyline ? '(No map data for this run)' : ''
+    !run.summary_polyline ? '(No map data for this activity)' : ''
   }`;
 };
 
 const formatPace = (d: number): string => {
-  if (Number.isNaN(d)) return '0';
+  if (Number.isNaN(d) || d === 0) return '0';
   const pace = (M_TO_DIST / 60.0) * (1.0 / d);
   const minutes = Math.floor(pace);
   const seconds = Math.floor((pace - minutes) * 60.0);
@@ -193,7 +257,9 @@ const intComma = (x = '') => {
 };
 
 const getActivitySport = (act: Activity): string => {
-  if (act.type === 'Run') {
+  const activityType = getActivityType(act);
+
+  if (activityType === 'running') {
     if (act.subtype === 'generic') {
       const runDistance = act.distance / 1000;
       if (runDistance > 20 && runDistance < 40) {
@@ -206,15 +272,18 @@ const getActivitySport = (act: Activity): string => {
     else if (act.subtype === 'treadmill')
       return ACTIVITY_TYPES.RUN_TREADMILL_TITLE;
     else return ACTIVITY_TYPES.RUN_GENERIC_TITLE;
-  } else if (act.type === 'hiking') {
+  } else if (activityType === 'hiking') {
     return ACTIVITY_TYPES.HIKING_TITLE;
-  } else if (act.type === 'cycling') {
+  } else if (activityType === 'cycling') {
     return ACTIVITY_TYPES.CYCLING_TITLE;
-  } else if (act.type === 'walking') {
+  } else if (activityType === 'walking') {
     return ACTIVITY_TYPES.WALKING_TITLE;
+  } else if (activityType === 'swimming') {
+    return ACTIVITY_TYPES.SWIMMING_TITLE;
+  } else if (activityType === 'mountaineering') {
+    return ACTIVITY_TYPES.MOUNTAINEERING_TITLE;
   }
-  // if act.type contains 'skiing'
-  else if (act.type.includes('skiing')) {
+  if (activityType === 'skiing') {
     return ACTIVITY_TYPES.SKIING_TITLE;
   }
   return '';
@@ -234,6 +303,13 @@ const titleForRun = (run: Activity): string => {
     }
   }
   // 3. use time+length if location or type is not available
+  if (!isRunningActivity(run)) {
+    const activitySport = getActivitySport(run);
+    if (activitySport) {
+      return activitySport;
+    }
+  }
+
   const runDistance = run.distance / 1000;
   const runHour = +run.start_date_local.slice(11, 13);
   if (runDistance > 20 && runDistance < 40) {
@@ -271,7 +347,7 @@ const filterCityRuns = (run: Activity, city: string) => {
   return false;
 };
 const filterTitleRuns = (run: Activity, title: string) =>
-  titleForRun(run) === title;
+  titleForRun(run) === title || getActivitySport(run) === title;
 
 const filterAndSortRuns = (
   activities: Activity[],
@@ -300,6 +376,8 @@ export {
   scrollToMap,
   locationForRun,
   intComma,
+  getActivitySport,
+  getActivityType,
   titleForRun,
   filterYearRuns,
   filterCityRuns,

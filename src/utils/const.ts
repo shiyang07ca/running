@@ -52,15 +52,15 @@ const IS_CHINESE = true;
 const USE_ANIMATION_FOR_GRID = false;
 const CHINESE_INFO_MESSAGE = (yearLength: number, year: string): string => {
   const yearStr = year === 'Total' ? '所有' : ` ${year} `;
-  return `记录自己跑步 ${yearLength} 年了，下面列表展示的是${yearStr}的数据`;
+  return `记录自己运动 ${yearLength} 年了，下面列表展示的是${yearStr}的数据`;
 };
 const ENGLISH_INFO_MESSAGE = (yearLength: number, year: string): string =>
-  `Running Journey with ${yearLength} Years, the table shows year ${year} data`;
+  `Activity Journey with ${yearLength} Years, the table shows year ${year} data`;
 
 // English is not supported for location info messages yet
 const CHINESE_LOCATION_INFO_MESSAGE_FIRST =
-  '跑过了一些地方，希望随着时间推移，点亮的地方越来越多';
-const CHINESE_LOCATION_INFO_MESSAGE_SECOND = '不要停下来，不要停下奔跑的脚步';
+  '运动记录覆盖了一些地方，希望随着时间推移，点亮的地方越来越多';
+const CHINESE_LOCATION_INFO_MESSAGE_SECOND = '不要停下来，不要停下探索的脚步';
 
 const INFO_MESSAGE = IS_CHINESE ? CHINESE_INFO_MESSAGE : ENGLISH_INFO_MESSAGE;
 const FULL_MARATHON_RUN_TITLE = IS_CHINESE ? '全程马拉松' : 'Full Marathon';
@@ -78,8 +78,10 @@ const CYCLING_TITLE = IS_CHINESE ? '骑行' : 'Cycling';
 const SKIING_TITLE = IS_CHINESE ? '滑雪' : 'Skiing';
 const WALKING_TITLE = IS_CHINESE ? '步行' : 'Walking';
 const SWIMMING_TITLE = IS_CHINESE ? '游泳' : 'Swimming';
+const MOUNTAINEERING_TITLE = IS_CHINESE ? '登山' : 'Mountaineering';
 const ALL_TITLE = IS_CHINESE ? '所有' : 'All';
 const ACTIVITY_COUNT_TITLE = IS_CHINESE ? '活动次数' : 'Activity Count';
+const ACTIVITY_COUNT_UNIT_TITLE = IS_CHINESE ? ' 次活动' : ' Activities';
 const MAX_DISTANCE_TITLE = IS_CHINESE ? '最远距离' : 'Max Distance';
 const MAX_SPEED_TITLE = IS_CHINESE ? '最快速度' : 'Max Speed';
 const TOTAL_TIME_TITLE = IS_CHINESE ? '总时间' : 'Total Time';
@@ -110,6 +112,7 @@ const ACTIVITY_TYPES = {
   SKIING_TITLE,
   WALKING_TITLE,
   SWIMMING_TITLE,
+  MOUNTAINEERING_TITLE,
   ALL_TITLE,
 };
 
@@ -124,6 +127,7 @@ const RUN_TITLES = {
 };
 const ACTIVITY_TOTAL = {
   ACTIVITY_COUNT_TITLE,
+  ACTIVITY_COUNT_UNIT_TITLE,
   MAX_DISTANCE_TITLE,
   MAX_SPEED_TITLE,
   TOTAL_TIME_TITLE,

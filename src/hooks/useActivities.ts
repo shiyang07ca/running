@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Activity } from '@/utils/utils';
-import { locationForRun, titleForRun } from '@/utils/utils';
+import { getActivitySport, locationForRun } from '@/utils/utils';
 import activitiesUrl from '@/static/activities.json?url';
 import { COUNTRY_STANDARDIZATION } from '@/static/city';
 
@@ -63,7 +63,7 @@ const processActivities = (activityData: Activity[]): ProcessedActivities => {
   activityData.forEach((run) => {
     const location = locationForRun(run);
 
-    const periodName = titleForRun(run);
+    const periodName = getActivitySport(run);
     if (periodName) {
       runPeriod[periodName] = runPeriod[periodName]
         ? runPeriod[periodName] + 1

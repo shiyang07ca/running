@@ -21,7 +21,7 @@ import {
   WALKING_COLOR,
 } from './const';
 import type { Activity } from './utils';
-import { locationForRun } from './utils';
+import { getActivityType, locationForRun } from './utils';
 
 export type Coordinate = [number, number];
 
@@ -59,8 +59,8 @@ export const pathForRun = (run: Activity): Coordinate[] => {
 const colorForRun = (run: Activity): string => {
   const dynamicRunColor = getRuntimeRunColor();
 
-  switch (run.type) {
-    case 'Run': {
+  switch (getActivityType(run)) {
+    case 'running': {
       if (run.subtype === 'indoor' || run.subtype === 'treadmill') {
         return INDOOR_COLOR;
       }
@@ -72,16 +72,13 @@ const colorForRun = (run: Activity): string => {
       return dynamicRunColor;
     }
     case 'cycling':
-    case 'Ride':
       return CYCLING_COLOR;
     case 'hiking':
-    case 'Hike':
+    case 'mountaineering':
       return HIKING_COLOR;
     case 'walking':
-    case 'Walk':
       return WALKING_COLOR;
     case 'swimming':
-    case 'Swim':
       return SWIMMING_COLOR;
     default:
       return MAIN_COLOR;

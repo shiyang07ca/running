@@ -6,7 +6,7 @@ import { formatPace } from '@/utils/utils';
 import useHover from '@/hooks/useHover';
 import { yearStats, githubYearStats } from '@assets/index';
 import { loadSvgComponent } from '@/utils/svgUtils';
-import { SHOW_ELEVATION_GAIN } from '@/utils/const';
+import { ACTIVITY_TOTAL, SHOW_ELEVATION_GAIN } from '@/utils/const';
 import { DIST_UNIT, M_TO_DIST, M_TO_ELEV } from '@/utils/utils';
 
 const yearSvgs = Object.fromEntries(
@@ -26,7 +26,7 @@ const githubYearSvgs = Object.fromEntries(
 interface YearStatAccumulator {
   averageHeartRateTotal: number;
   heartRateNullCount: number;
-  runCount: number;
+  activityCount: number;
   streak: number;
   totalDistance: number;
   totalElevationGain: number;
@@ -37,8 +37,8 @@ interface YearStatAccumulator {
 interface YearStatSummary {
   averageHeartRate: string;
   averagePace: string;
+  activityCount: number;
   hasHeartRate: boolean;
-  runCount: number;
   streak: number;
   totalDistance: number;
   totalElevationGain: string;
@@ -47,7 +47,7 @@ interface YearStatSummary {
 const createAccumulator = (): YearStatAccumulator => ({
   averageHeartRateTotal: 0,
   heartRateNullCount: 0,
-  runCount: 0,
+  activityCount: 0,
   streak: 0,
   totalDistance: 0,
   totalElevationGain: 0,
@@ -55,34 +55,36 @@ const createAccumulator = (): YearStatAccumulator => ({
   totalSecondsForPace: 0,
 });
 
-const addRunToAccumulator = (
+const addActivityToAccumulator = (
   accumulator: YearStatAccumulator,
-  run: Activity
+  activity: Activity
 ) => {
-  accumulator.runCount += 1;
-  accumulator.totalDistance += run.distance || 0;
-  accumulator.totalElevationGain += run.elevation_gain || 0;
+  accumulator.activityCount += 1;
+  accumulator.totalDistance += activity.distance || 0;
+  accumulator.totalElevationGain += activity.elevation_gain || 0;
 
-  if (run.average_speed) {
-    accumulator.totalMetersForPace += run.distance || 0;
-    accumulator.totalSecondsForPace += (run.distance || 0) / run.average_speed;
+  if (activity.average_speed) {
+    accumulator.totalMetersForPace += activity.distance || 0;
+    accumulator.totalSecondsForPace +=
+      (activity.distance || 0) / activity.average_speed;
   }
 
-  if (run.average_heartrate) {
-    accumulator.averageHeartRateTotal += run.average_heartrate;
+  if (activity.average_heartrate) {
+    accumulator.averageHeartRateTotal += activity.average_heartrate;
   } else {
     accumulator.heartRateNullCount += 1;
   }
 
-  if (run.streak) {
-    accumulator.streak = Math.max(accumulator.streak, run.streak);
+  if (activity.streak) {
+    accumulator.streak = Math.max(accumulator.streak, activity.streak);
   }
 };
 
 const finalizeYearStat = (
   accumulator: YearStatAccumulator
 ): YearStatSummary => {
-  const heartRateCount = accumulator.runCount - accumulator.heartRateNullCount;
+  const heartRateCount =
+    accumulator.activityCount - accumulator.heartRateNullCount;
 
   return {
     averageHeartRate: (
@@ -92,7 +94,7 @@ const finalizeYearStat = (
       accumulator.totalMetersForPace / accumulator.totalSecondsForPace
     ),
     hasHeartRate: accumulator.averageHeartRateTotal !== 0,
-    runCount: accumulator.runCount,
+    activityCount: accumulator.activityCount,
     streak: accumulator.streak,
     totalDistance: parseFloat(
       (accumulator.totalDistance / M_TO_DIST).toFixed(1)
@@ -110,13 +112,13 @@ const getYearStatSummaries = (activityData: Activity[]) => {
   const accumulators = new Map<string, YearStatAccumulator>();
   accumulators.set('Total', createAccumulator());
 
-  activityData.forEach((run) => {
-    const year = run.start_date_local.slice(0, 4);
+  activityData.forEach((activity) => {
+    const year = activity.start_date_local.slice(0, 4);
     if (!accumulators.has(year)) {
       accumulators.set(year, createAccumulator());
     }
-    addRunToAccumulator(accumulators.get('Total')!, run);
-    addRunToAccumulator(accumulators.get(year)!, run);
+    addActivityToAccumulator(accumulators.get('Total')!, activity);
+    addActivityToAccumulator(accumulators.get(year)!, activity);
   });
 
   const summaries = new Map(
@@ -150,7 +152,10 @@ const YearStat = ({
     <div className="cursor-pointer" onClick={() => onClick(year)}>
       <section {...eventHandlers}>
         <Stat value={year} description=" Journey" />
-        <Stat value={summary.runCount} description=" Runs" />
+        <Stat
+          value={summary.activityCount}
+          description={ACTIVITY_TOTAL.ACTIVITY_COUNT_UNIT_TITLE}
+        />
         <Stat value={summary.totalDistance} description={` ${DIST_UNIT}`} />
         {SHOW_ELEVATION_GAIN && (
           <Stat
