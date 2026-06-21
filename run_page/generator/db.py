@@ -47,6 +47,12 @@ ACTIVITY_KEYS = [
 ]
 
 
+ACTIVITY_TYPE_OVERRIDES = {
+    1756503423000: "hiking",
+    1756598193000: "hiking",
+}
+
+
 class Activity(Base):
     __tablename__ = "activities"
 
@@ -81,9 +87,26 @@ class Activity(Base):
         return out
 
 
+def get_activity_type(run_id, activity_type):
+    return ACTIVITY_TYPE_OVERRIDES.get(int(run_id), activity_type)
+
+
+def apply_activity_type_overrides(session):
+    updated = 0
+    for run_id, activity_type in ACTIVITY_TYPE_OVERRIDES.items():
+        updated += (
+            session.query(Activity)
+            .filter_by(run_id=run_id)
+            .filter(Activity.type != activity_type)
+            .update({Activity.type: activity_type}, synchronize_session=False)
+        )
+    return updated
+
+
 def update_or_create_activity(session, run_activity):
     created = False
     try:
+        activity_type = get_activity_type(run_activity.id, run_activity.type)
         activity = (
             session.query(Activity).filter_by(run_id=int(run_activity.id)).first()
         )
@@ -134,7 +157,7 @@ def update_or_create_activity(session, run_activity):
                 distance=run_activity.distance,
                 moving_time=run_activity.moving_time,
                 elapsed_time=run_activity.elapsed_time,
-                type=run_activity.type,
+                type=activity_type,
                 subtype=run_activity.subtype,
                 start_date=run_activity.start_date,
                 start_date_local=run_activity.start_date_local,
@@ -153,7 +176,7 @@ def update_or_create_activity(session, run_activity):
             activity.distance = float(run_activity.distance)
             activity.moving_time = run_activity.moving_time
             activity.elapsed_time = run_activity.elapsed_time
-            activity.type = run_activity.type
+            activity.type = activity_type
             activity.subtype = run_activity.subtype
             activity.average_heartrate = run_activity.average_heartrate
             activity.average_speed = float(run_activity.average_speed)

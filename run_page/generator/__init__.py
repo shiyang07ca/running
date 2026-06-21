@@ -12,7 +12,12 @@ from sqlalchemy import func
 from polyline_processor import filter_out
 from synced_data_file_logger import save_synced_data_file_list
 
-from .db import Activity, init_db, update_or_create_activity
+from .db import (
+    Activity,
+    apply_activity_type_overrides,
+    init_db,
+    update_or_create_activity,
+)
 
 IGNORE_BEFORE_SAVING = os.getenv("IGNORE_BEFORE_SAVING", False)
 
@@ -125,6 +130,8 @@ class Generator:
     def __init__(self, db_path):
         self.client = stravalib.Client()
         self.session = init_db(db_path)
+        if apply_activity_type_overrides(self.session):
+            self.session.commit()
 
         self.client_id = ""
         self.client_secret = ""
